@@ -1,4 +1,7 @@
-# Phong's X/Twitter Auto Poster
+
+# PHONG-BOT
+## For automatic random auto-posting to social media.
+Copyright (C) 2024 Anson Phong
 
 A robust Python-based X/Twitter bot that automatically posts content from a local directory to X.com. The bot intelligently handles multiple images, videos, text content, and alt text while tracking what has been posted to prevent duplicates.
 
