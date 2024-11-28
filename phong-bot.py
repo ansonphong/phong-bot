@@ -38,7 +38,7 @@ class TwitterAutoPoster:
             level=logging.INFO,
             format='%(asctime)s - %(levelname)s - %(message)s',
             handlers=[
-                logging.FileHandler('twitter_poster.log'),
+                logging.FileHandler('x_poster.log'),
                 logging.StreamHandler()
             ]
         )

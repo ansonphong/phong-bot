@@ -2,7 +2,7 @@
 .env
 _ARCHIVE/
 posts/
-twitter_poster.log
+x_poster.log
 venv/
 
 # macOS system files
