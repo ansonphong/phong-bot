@@ -3,6 +3,7 @@ import logging
 import tweepy
 from typing import List, Optional
 from post_base import BasePoster, PostContent
+from tqdm import tqdm
 
 class XPoster(BasePoster):
     def __init__(self, config: dict):
@@ -50,53 +51,112 @@ class XPoster(BasePoster):
             self.logger.error(f"Failed to initialize X client: {str(e)}")
             raise
 
+    def _upload_chunked_video(self, video_path: str) -> Optional[int]:
+        """Upload a video in chunks with progress bar."""
+        try:
+            file_size = os.path.getsize(video_path)
+            print(f"\nUploading video: {os.path.basename(video_path)}")
+            
+            # INIT
+            upload = self.api.chunked_upload(filename=video_path, file_size=file_size)
+            
+            # APPEND
+            chunk_size = 1024 * 1024  # 1MB chunks
+            total_chunks = (file_size + chunk_size - 1) // chunk_size
+            
+            with open(video_path, 'rb') as file, \
+                tqdm(total=total_chunks, desc="Uploading", unit="MB") as pbar:
+                
+                bytes_sent = 0
+                while bytes_sent < file_size:
+                    chunk = file.read(chunk_size)
+                    if not chunk:
+                        break
+                    upload = self.api.chunked_upload(chunk, 
+                                                file_size=file_size,
+                                                media_id=upload.media_id,
+                                                segment_index=bytes_sent // chunk_size)
+                    bytes_sent += len(chunk)
+                    pbar.update(1)
+            
+            # FINALIZE
+            print("Finalizing upload...")
+            media = self.api.chunked_upload(media_id=upload.media_id, status='FINALIZE')
+            
+            print(f"Video upload complete! Media ID: {media.media_id}")
+            return media.media_id
+            
+        except Exception as e:
+            self.logger.error(f"Failed to upload video {video_path}: {str(e)}")
+            print(f"Error uploading video: {str(e)}")
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Failed to upload video {video_path}: {str(e)}")
+            print(f"Error uploading video: {str(e)}")
+            return None
+
+    def _upload_image(self, image_path: str, alt_text: Optional[str] = None) -> Optional[int]:
+        """Upload an image with progress bar."""
+        try:
+            file_size = os.path.getsize(image_path)
+            print(f"\nUploading image: {os.path.basename(image_path)}")
+            
+            with tqdm(total=100, desc="Uploading", unit="%") as pbar:
+                media = self.api.media_upload(filename=image_path)
+                pbar.update(100)  # Since we can't get real-time progress for images
+                
+            if alt_text:
+                print("Adding alt text...")
+                self.api.create_media_metadata(media.media_id, alt_text)
+                
+            print(f"Image upload complete! Media ID: {media.media_id}")
+            return media.media_id
+            
+        except Exception as e:
+            self.logger.error(f"Failed to upload image {image_path}: {str(e)}")
+            print(f"Error uploading image: {str(e)}")
+            return None
+
     def post_content(self, post: PostContent) -> bool:
-        """Post content to X/Twitter. Extends BasePoster's post_content method."""
-        # First validate the content using parent class method
+        """Post content to X/Twitter with progress feedback."""
         if not self.validate_post_content(post):
-            self.logger.error("Content validation failed")
+            print("Content validation failed")
             return False
 
         try:
             media_ids = []
-
+            
             # Handle images if present
             if post.images:
-                for image in post.images:
+                print(f"\nProcessing {len(post.images)} images...")
+                for i, image in enumerate(post.images, 1):
+                    print(f"\nImage {i}/{len(post.images)}")
                     if not self._validate_media_file(image):
-                        self.logger.error(f"Failed to validate image: {image}")
+                        print(f"Failed to validate image: {image}")
                         return False
                     
-                    try:
-                        media = self.api.media_upload(filename=image)
-                        if post.alt_text:
-                            self.api.create_media_metadata(media.media_id, post.alt_text)
-                        media_ids.append(media.media_id)
-                        self.logger.info(f"Successfully uploaded image: {image}")
-                    except Exception as e:
-                        self.logger.error(f"Failed to upload image {image}: {str(e)}")
+                    media_id = self._upload_image(image, post.alt_text)
+                    if media_id:
+                        media_ids.append(media_id)
+                    else:
                         return False
 
             # Handle video if present
             elif post.video:
+                print("\nProcessing video...")
                 if not self._validate_media_file(post.video):
-                    self.logger.error(f"Failed to validate video: {post.video}")
+                    print(f"Failed to validate video: {post.video}")
                     return False
-                    
-                try:
-                    media = self.api.media_upload(
-                        filename=post.video,
-                        chunked=True  # Use chunked upload for videos
-                    )
-                    if post.alt_text:
-                        self.api.create_media_metadata(media.media_id, post.alt_text)
-                    media_ids.append(media.media_id)
-                    self.logger.info(f"Successfully uploaded video: {post.video}")
-                except Exception as e:
-                    self.logger.error(f"Failed to upload video {post.video}: {str(e)}")
+                
+                media_id = self._upload_chunked_video(post.video)
+                if media_id:
+                    media_ids.append(media_id)
+                else:
                     return False
 
             # Create the tweet
+            print("\nPosting to X...")
             response = self.client.create_tweet(
                 text=post.main_text if post.main_text else None,
                 media_ids=media_ids if media_ids else None
@@ -104,16 +164,19 @@ class XPoster(BasePoster):
             
             if response and hasattr(response, 'data'):
                 tweet_id = response.data['id']
+                print(f"\nSuccess! Tweet posted with ID: {tweet_id}")
                 self.logger.info(f"Successfully posted to X. Tweet ID: {tweet_id}")
                 return True
             else:
-                self.logger.error("Failed to post to X: No response data received")
+                print("\nError: Failed to post to X - No response data received")
                 return False
 
         except tweepy.TweepyException as e:
+            print(f"\nError: Failed to post to X - {str(e)}")
             self.logger.error(f"Tweepy error while posting to X: {str(e)}")
             return False
         except Exception as e:
+            print(f"\nError: Unexpected error while posting to X - {str(e)}")
             self.logger.error(f"Unexpected error while posting to X: {str(e)}")
             return False
 
@@ -121,9 +184,11 @@ class XPoster(BasePoster):
         """Check current rate limit status."""
         try:
             limits = self.api.rate_limit_status()
-            # Log remaining tweet and media upload limits
-            self.logger.info(f"Rate limits remaining: {limits['resources']['statuses']['/statuses/update']}")
+            status = limits['resources']['statuses']['/statuses/update']
+            print(f"\nRate limits:")
+            print(f"- Tweets remaining: {status['remaining']}/{status['limit']}")
+            print(f"- Resets in: {status['reset']} seconds")
             return True
         except Exception as e:
-            self.logger.warning(f"Failed to check rate limits: {str(e)}")
+            print(f"\nWarning: Failed to check rate limits - {str(e)}")
             return False
