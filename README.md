@@ -35,6 +35,8 @@ A robust Python-based social media bot that automatically posts content from a l
 
 ## Installation
 
+First look at the setup or bash file, depending on your OS, and configure it so that the paths are fitting to your preference.
+
 ### Windows
 ```batch
 # Run setup script
