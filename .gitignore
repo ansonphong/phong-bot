@@ -1,0 +1,30 @@
+# Project-specific files
+.env
+_ARCHIVE/
+posts/
+twitter_poster.log
+venv/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# macOS resource forks and files
+*.swp
+*.swo
+.DS_Store?
+._*
+
+# macOS Finder settings
+Icon?
+._*
+
+# macOS Tags
+.VolumeIcon.icns
+.metadata_never_index
+.com.apple.timemachine.donotpresent
+
+# macOS files used for storage
+Thumbs.db
+Desktop.ini
