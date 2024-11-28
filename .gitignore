@@ -4,6 +4,13 @@ _ARCHIVE/
 posts/
 x_poster.log
 venv/
+config.json
+phong_bot.log
+xposter.log
+threadsposter.log
+
+#Python
+__pycache__/
 
 # macOS system files
 .DS_Store

@@ -1,17 +1,11 @@
-```
-    @..@ 
-   (----)
-  ( >__< )
-  ^^ ~~ ^^
-```
 # 🐸🤖 PHONG-BOT
-### For automatic random auto-posting to social media.
+### Automated Social Media Content Posting Bot
 
-A robust Python-based X/Twitter bot that automatically posts content from a local directory to X.com. The bot intelligently handles multiple images, videos, text content, and alt text while tracking what has been posted to prevent duplicates.
+A robust Python-based social media bot that automatically posts content from a local directory to multiple platforms. The bot intelligently handles multiple images, videos, text content, and alt text while tracking what has been posted to prevent duplicates.
 
 ## Features
 
-- 🎯 Smart content management with basename tracking
+- 🎯 Multi-platform support (X/Twitter and Meta Threads)
 - 🖼️ Support for multiple images in a single post
 - 🎥 Video posting capabilities
 - ♿ Alt text support for accessibility
@@ -19,231 +13,229 @@ A robust Python-based X/Twitter bot that automatically posts content from a loca
 - 🔄 Random post selection
 - 📊 Detailed logging
 - ✅ Posted content tracking
-- 🔒 Secure credential management
-
-## Table of Contents
-
-- [Requirements](#requirements)
-- [Installation](#installation)
-- [Configuration](#configuration)
-- [File Structure](#file-structure)
-- [Usage](#usage)
-- [Content Management](#content-management)
-- [Automated Posting](#automated-posting)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [License](#license)
+- 🔒 Secure credential management via config.json
+- 📅 Flexible scheduling options
 
 ## Requirements
 
 - Python 3.7+
-- Twitter Developer Account with Elevated Access
-- Required Python packages:
+- Required Python packages (see requirements.txt):
   ```
-  tweepy>=4.10.0
-  python-dotenv>=0.19.0
+  certifi==2024.8.30
+  charset-normalizer==3.4.0
+  idna==3.10
+  oauthlib==3.2.2
+  pillow==11.0.0
+  python-dotenv==1.0.1
+  requests==2.32.3
+  requests-oauthlib==1.3.1
+  tweepy==4.14.0
+  urllib3==2.2.3
   ```
 
 ## Installation
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/twitter-auto-poster.git
-   cd twitter-auto-poster
-   ```
+### Windows
+```batch
+# Run setup script
+setup.bat
+```
 
-2. Install required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+### Linux/Mac
+```bash
+# Run setup script
+chmod +x setup.sh
+./setup.sh
+```
 
-3. Create a `.env` file in the root directory:
-   ```env
-   TWITTER_API_KEY=your_api_key
-   TWITTER_API_SECRET=your_api_secret
-   TWITTER_ACCESS_TOKEN=your_access_token
-   TWITTER_ACCESS_TOKEN_SECRET=your_access_token_secret
-   TWITTER_BEARER_TOKEN=your_bearer_token
-   ```
 
 ## Configuration
 
-### Twitter Developer Account Setup
+1. Copy the sample configuration file:
+```bash
+cp config-sample.json config.json
+```
 
-1. Go to [Twitter Developer Portal](https://developer.twitter.com/en/portal/dashboard)
-2. Create a new project and app
-3. Enable OAuth 1.0a and OAuth 2.0
-4. Set app permissions to "Read and Write"
-5. Generate Access Token and Secret
-6. Enable Elevated access for media upload capabilities
+2. Edit `config.json` with your credentials and settings:
+```json
+{
+    "x": {
+        "enabled": true,
+        "api_key": "your_api_key",
+        "api_secret": "your_api_secret",
+        "access_token": "your_access_token",
+        "access_token_secret": "your_access_token_secret",
+        "bearer_token": "your_bearer_token",
+         "text_limit": 280 // 280 for free accounts or 25000 for premium accounts
+    },
+    "threads": {
+        "enabled": false,
+        "api_key": "",
+        "api_secret": "",
+        "access_token": "",
+        "instagram_username": "",
+        "instagram_password": ""
+    },
+    "posting_schedule": {
+        "days": [1, 3, 5],
+        "hour": 7,
+        "minute": 0
+    },
+    "content": {
+        "posts_directory": "posts",
+        "max_images": 4,
+        "max_image_size_mb": 5,
+        "max_video_size_mb": 512
+    }
+}
+```
+
+A sample configuration file (`config-sample.json`) is provided in the repository. This file contains the structure of the configuration with placeholder values. Simply copy this file to `config.json` and update it with your actual credentials and preferences.
+
+Never commit your actual `config.json` file containing real credentials to version control. The `.gitignore` file is set up to exclude this file by default.
+
+
 
 ## File Structure
 
 ```
 phong-bot/
-├── posts/                  # Content directory
-│   ├── posted.txt         # Tracks posted content
-│   ├── example-1.jpg      
-│   ├── example-2.jpg
-│   ├── example.txt
-│   └── example-alt.txt
-├── .env                   # Environment variables
+├── posts/                 # Content directory
+│   └── posted.txt         # Tracks posted content
+├── post_base.py           # Base class for all platforms
+├── post_x.py              # X/Twitter implementation
+├── post_threads.py        # Threads implementation
+├── phong-bot.py           # Main bot logic
+├── update_config.py       # Config management
+├── config.json            # Central configuration
 ├── requirements.txt       # Python dependencies
-├── phong-bot.py           # Main script
+├── setup.bat              # Windows setup script
+├── setup.sh               # Linux setup script
 └── README.md              # Documentation
 ```
 
 ## Content Management
 
-### Supported File Formats
-
+### Supported File Types
 - Images: `.jpg`, `.jpeg`, `.png`, `.gif`
 - Videos: `.mp4`, `.mov`
 - Text: `.txt`
 
 ### File Naming Conventions
 
-The bot supports various content combinations through specific naming conventions:
-
 1. Multiple Images with Text:
-   ```
-   mypost-1.jpg
-   mypost-2.jpg
-   mypost-3.jpg
-   mypost.txt
-   ```
+```
+mypost-1.jpg
+mypost-2.jpg
+mypost-3.jpg
+mypost.txt
+```
 
 2. Single Image with Text:
-   ```
-   mypost.jpg
-   mypost.txt
-   ```
+```
+mypost.jpg
+mypost.txt
+```
 
 3. Image with Alt Text:
-   ```
-   mypost.jpg
-   mypost-alt.txt
-   ```
+```
+mypost.jpg
+mypost-alt.txt
+```
 
-4. Text Only:
-   ```
-   mypost.txt
-   ```
-
-5. Image Only:
-   ```
-   mypost.jpg
-   ```
-
-6. Image with Alt Text Only:
-   ```
-   mypost.jpg
-   mypost-alt.txt
-   ```
-
-7. Video with Text:
-   ```
-   mypost.mp4
-   mypost.txt
-   ```
+4. Video with Text:
+```
+mypost.mp4
+mypost.txt
+```
 
 ### Content Guidelines
-
 - Images must be under 5MB
 - Videos must be under 512MB
-- Alt text should be descriptive and under 1000 characters
+- Alt text should be under 1000 characters
 - Tweet text should be under 280 characters
 
 ## Usage
 
-### Basic Usage
-
-Run the script manually:
-```bash
-python phong-bot.py
+### Manual Run
+Windows:
+```batch
+run-bot.bat
 ```
 
-### Automated Posting
+Linux/Mac:
+```bash
+./run-bot.sh
+```
 
-#### Using Cron (Linux/Mac)
+### Automated Scheduling
 
-1. Open your crontab:
-   ```bash
-   crontab -e
-   ```
+#### Windows Task Scheduler
+```batch
+# Default schedule (M/W/F at 7am)
+task-setup.bat
 
-2. Add a schedule (e.g., every 6 hours):
-   ```bash
-   0 */6 * * * cd /path/to/twitter-auto-poster && /usr/bin/python3 phong-bot.py
-   ```
+# Daily at 7am
+task-setup.bat daily
 
-#### Using Task Scheduler (Windows)
+# Weekly on Monday at 7am
+task-setup.bat weekly
+```
 
-1. Open Task Scheduler
-2. Create Basic Task
-3. Set trigger (e.g., daily)
-4. Action: Start a program
-   - Program/script: `python`
-   - Arguments: `phong-bot.py`
-   - Start in: `C:\path\to\phong-bot`
+#### Linux Cron
+Add to crontab:
+```bash
+# Run M/W/F at 7am
+0 7 * * 1,3,5 /path/to/phong-bot/run-bot.sh
+```
 
-### Logging
+## Logging
 
-The bot creates a detailed log file `x_poster.log` containing:
+The bot creates detailed logs in:
+- `phong_bot.log` - General application logs
+- `x_poster.log` - X/Twitter specific logs
+- `threads_poster.log` - Threads specific logs
+
+Logs include:
 - Authentication status
 - Media upload progress
+- Content processing details
 - Errors and exceptions
 - Successful posts
 
-## How It Works
+## Platform Support
 
-1. **Content Discovery**
-   - Scans `/posts` directory
-   - Creates list of unique basenames
-   - Filters out already posted content
+### X/Twitter
+- Full API support via tweepy
+- Media upload with alt text
+- Rate limit handling
+- Error recovery
 
-2. **Content Selection**
-   - Randomly selects from available content
-   - Groups related files by basename
-
-3. **Content Processing**
-   - Consolidates media files
-   - Reads text content
-   - Processes alt text
-
-4. **Posting**
-   - Uploads media
-   - Creates tweet
-   - Updates `posted.txt`
+### Meta Threads
+- Basic implementation ready
+- Awaiting public API availability
+- Follows same content structure as X/Twitter
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **403 Forbidden Error**
-   - Check API access level
-   - Verify token permissions
-   - Regenerate access tokens
+1. Authentication Errors:
+   - Verify credentials in config.json
+   - Run update_config.py after changes
+   - Check platform API status
 
-2. **Media Upload Fails**
-   - Verify file size limits
-   - Check file format
-   - Ensure proper permissions
+2. Media Upload Failures:
+   - Verify file sizes
+   - Check file permissions
+   - Ensure proper file formats
 
-3. **Authentication Failed**
-   - Verify .env file configuration
-   - Check token validity
-   - Ensure elevated access
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Commit changes
-4. Push to the branch
-5. Create a Pull Request
+3. Scheduling Issues:
+   - Check system time/timezone
+   - Verify script paths
+   - Check log files for errors
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+GPL-3.0 License - see LICENSE for details.  
 Copyright (C) 2024 Anson Phong
