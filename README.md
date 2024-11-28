@@ -1,4 +1,9 @@
-
+```
+    @..@ 
+   (----)
+  ( >__< )
+  ^^ ~~ ^^
+```
 # 🐸🤖 PHONG-BOT
 ### For automatic random auto-posting to social media.
 
