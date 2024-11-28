@@ -107,7 +107,7 @@ Never commit your actual `config.json` file containing real credentials to versi
 ```
 phong-bot/
 ├── posts/                 # Content directory
-│   └── posted.txt         # Tracks posted content
+│   └── posted/            # Already posted content
 ├── post_base.py           # Base class for all platforms
 ├── post_x.py              # X/Twitter implementation
 ├── post_threads.py        # Threads implementation
