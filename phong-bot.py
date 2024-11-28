@@ -11,7 +11,7 @@
 # but WITHOUT ANY WARRANTY. See the GNU General Public License for more details.
 # See <https://www.gnu.org/licenses/gpl-3.0.txt>
 # Created with Claude AI
-# Copyright (C) 2024 Anson Phong : https://phong.com
+# Copyright (C) 2024 Anson Phong : @ansonphong : https://phong.com
 
 import json
 import random
