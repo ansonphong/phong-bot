@@ -1,6 +1,6 @@
-# Twitter Auto Poster
+# Phong's X/Twitter Auto Poster
 
-A robust Python-based Twitter bot that automatically posts content from a local directory to Twitter. The bot intelligently handles multiple images, videos, text content, and alt text while tracking what has been posted to prevent duplicates.
+A robust Python-based X/Twitter bot that automatically posts content from a local directory to X.com. The bot intelligently handles multiple images, videos, text content, and alt text while tracking what has been posted to prevent duplicates.
 
 ## Features
 
