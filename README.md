@@ -73,7 +73,7 @@ A robust Python-based X/Twitter bot that automatically posts content from a loca
 ## File Structure
 
 ```
-twitter-auto-poster/
+phong-bot/
 ├── posts/                  # Content directory
 │   ├── posted.txt         # Tracks posted content
 │   ├── example-1.jpg      
@@ -82,8 +82,8 @@ twitter-auto-poster/
 │   └── example-alt.txt
 ├── .env                   # Environment variables
 ├── requirements.txt       # Python dependencies
-├── twitter_poster.py      # Main script
-└── README.md             # Documentation
+├── phong-bot.py           # Main script
+└── README.md              # Documentation
 ```
 
 ## Content Management
@@ -153,7 +153,7 @@ The bot supports various content combinations through specific naming convention
 
 Run the script manually:
 ```bash
-python twitter_poster.py
+python phong-bot.py
 ```
 
 ### Automated Posting
@@ -167,7 +167,7 @@ python twitter_poster.py
 
 2. Add a schedule (e.g., every 6 hours):
    ```bash
-   0 */6 * * * cd /path/to/twitter-auto-poster && /usr/bin/python3 twitter_poster.py
+   0 */6 * * * cd /path/to/twitter-auto-poster && /usr/bin/python3 phong-bot.py
    ```
 
 #### Using Task Scheduler (Windows)
@@ -177,12 +177,12 @@ python twitter_poster.py
 3. Set trigger (e.g., daily)
 4. Action: Start a program
    - Program/script: `python`
-   - Arguments: `twitter_poster.py`
-   - Start in: `C:\path\to\twitter-auto-poster`
+   - Arguments: `phong-bot.py`
+   - Start in: `C:\path\to\phong-bot`
 
 ### Logging
 
-The bot creates a detailed log file `twitter_poster.log` containing:
+The bot creates a detailed log file `x_poster.log` containing:
 - Authentication status
 - Media upload progress
 - Errors and exceptions
