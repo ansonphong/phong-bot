@@ -86,7 +86,6 @@ class XPoster(BasePoster):
                 try:
                     media = self.api.media_upload(
                         filename=post.video,
-                        media_type='video/mp4',
                         chunked=True  # Use chunked upload for videos
                     )
                     if post.alt_text:
