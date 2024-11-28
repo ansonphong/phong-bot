@@ -16,6 +16,7 @@
 import json
 import random
 import logging
+import shutil
 from pathlib import Path
 from typing import List, Set
 
@@ -50,27 +51,22 @@ class PhongBot:
         
         # Initialize paths
         self.posts_dir = Path(self.config['content']['posts_directory'])
-        self.posted_file = self.posts_dir / "posted.txt"
+        self.posted_dir = self.posts_dir / "posted"
+        
+        # Create required directories
         self.posts_dir.mkdir(exist_ok=True)
+        self.posted_dir.mkdir(exist_ok=True)
 
     def _get_posted_basenames(self) -> Set[str]:
-        """Read and return set of already posted basenames."""
-        if not self.posted_file.exists():
-            return set()
-        
-        with open(self.posted_file, 'r') as f:
-            return {line.strip() for line in f if line.strip()}
+        """Get set of already posted basenames by checking posted directory."""
+        posted_files = list(self.posted_dir.iterdir())
+        return {self._get_basename_without_number(f.name) for f in posted_files if f.is_file()}
 
     def _get_available_posts(self) -> List[str]:
         """Get list of available posts that haven't been posted."""
-        all_files = {f.name for f in self.posts_dir.iterdir() if f.is_file()}
+        all_files = {f.name for f in self.posts_dir.iterdir() if f.is_file() and not f.name.startswith('.')}
+        unique_basenames = {self._get_basename_without_number(f) for f in all_files}
         posted_basenames = self._get_posted_basenames()
-        
-        unique_basenames = {
-            self._get_basename_without_number(f)
-            for f in all_files
-            if not f.startswith('.') and f != 'posted.txt'
-        }
         
         return list(unique_basenames - posted_basenames)
 
@@ -106,10 +102,17 @@ class PhongBot:
         post.images.sort()
         return post
 
-    def _mark_as_posted(self, basename: str):
-        """Mark basename as posted."""
-        with open(self.posted_file, 'a') as f:
-            f.write(f"{basename}\n")
+    def _move_to_posted(self, basename: str):
+        """Move all files with given basename to posted directory."""
+        try:
+            files = list(self.posts_dir.glob(f"{basename}*"))
+            for file in files:
+                target_path = self.posted_dir / file.name
+                shutil.move(str(file), str(target_path))
+                self.logger.info(f"Moved {file.name} to posted directory")
+        except Exception as e:
+            self.logger.error(f"Error moving files to posted directory: {e}")
+            raise
 
     def post_random_content(self) -> bool:
         """Post random content to all enabled platforms."""
@@ -129,7 +132,7 @@ class PhongBot:
                     success = False
             
             if success:
-                self._mark_as_posted(selected_basename)
+                self._move_to_posted(selected_basename)
                 self.logger.info(f"Successfully posted content: {selected_basename}")
                 
             return success
