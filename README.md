@@ -57,6 +57,9 @@ cp config-sample.json config.json
 ```
 
 2. Edit `config.json` with your credentials and settings:
+
+X text limit is 280 for free accounts or 25000 for premium accounts.
+
 ```json
 {
     "x": {
@@ -66,7 +69,7 @@ cp config-sample.json config.json
         "access_token": "your_access_token",
         "access_token_secret": "your_access_token_secret",
         "bearer_token": "your_bearer_token",
-         "text_limit": 280 // 280 for free accounts or 25000 for premium accounts
+        "text_limit": 280
     },
     "threads": {
         "enabled": false,
@@ -74,7 +77,8 @@ cp config-sample.json config.json
         "api_secret": "",
         "access_token": "",
         "instagram_username": "",
-        "instagram_password": ""
+        "instagram_password": "",
+        "text_limit": 500
     },
     "posting_schedule": {
         "days": [1, 3, 5],
