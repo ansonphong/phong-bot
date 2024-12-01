@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import List, Set
 
 from post_x import XPoster
-from post_threads import ThreadsPoster
+from post_instagram import InstagramPoster  # Updated import
 from post_base import PostContent
 
 class PhongBot:
@@ -46,8 +46,11 @@ class PhongBot:
         self.posters = []
         if self.config['x']['enabled']:
             self.posters.append(XPoster(self.config))
-        if self.config['threads']['enabled']:
-            self.posters.append(ThreadsPoster(self.config))
+        if self.config['instagram']['enabled']:  # Removed threads condition
+            self.posters.append(InstagramPoster(self.config))  # Updated class name
+        
+        if not self.posters:
+            self.logger.warning("No social media platforms are enabled in config")
         
         # Initialize paths
         self.posts_dir = Path(self.config['content']['posts_directory'])
@@ -64,42 +67,78 @@ class PhongBot:
 
     def _get_available_posts(self) -> List[str]:
         """Get list of available posts that haven't been posted."""
+        # Get all files that don't start with .
         all_files = {f.name for f in self.posts_dir.iterdir() if f.is_file() and not f.name.startswith('.')}
+        
+        # Get unique basenames, removing both numeric suffixes and alt suffixes
         unique_basenames = {self._get_basename_without_number(f) for f in all_files}
         posted_basenames = self._get_posted_basenames()
+        
+        self.logger.info(f"Found files: {all_files}")
+        self.logger.info(f"Unique basenames: {unique_basenames}")
+        self.logger.info(f"Posted basenames: {posted_basenames}")
         
         return list(unique_basenames - posted_basenames)
 
     def _get_basename_without_number(self, filename: str) -> str:
-        """Extract basename without number suffix and extension."""
+        """Extract basename without number suffix and alt suffix."""
         base = Path(filename).stem
+        
+        # First remove the -alt suffix if present
+        if base.endswith('-alt'):
+            base = base[:-4]  # Remove '-alt'
+            
+        # Then handle numeric suffix
         if '-' in base:
             parts = base.rsplit('-', 1)
             if parts[1].isdigit():
                 return parts[0]
+                
         return base
 
     def _build_post_content(self, basename: str) -> PostContent:
         """Build post content object from files matching basename."""
         post = PostContent(basename=basename)
+        self.logger.info(f"Building post content for basename: {basename}")
+        
+        # List all matching files before processing
         files = list(self.posts_dir.glob(f"{basename}*"))
+        self.logger.info(f"Found {len(files)} files matching basename: {[f.name for f in files]}")
         
         for file in files:
             suffix = file.suffix.lower()
             stem = file.stem
             
+            # Log each file being processed
+            self.logger.info(f"Processing file: {file} (suffix: {suffix}, stem: {stem})")
+            
             if suffix == '.txt':
                 with open(file, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
                     if stem.endswith('-alt'):
-                        post.alt_text = f.read().strip()
+                        post.alt_text = content
+                        self.logger.info(f"Added alt text: {len(content)} chars")
                     else:
-                        post.main_text = f.read().strip()
+                        post.main_text = content
+                        self.logger.info(f"Added main text: {len(content)} chars")
             elif suffix in {'.jpg', '.jpeg', '.png', '.gif'}:
                 post.images.append(str(file))
+                self.logger.info(f"Added image: {file}")
             elif suffix in {'.mp4', '.mov'}:
                 post.video = str(file)
+                self.logger.info(f"Added video: {file}")
         
-        post.images.sort()
+        if post.images:
+            post.images.sort()
+            self.logger.info(f"Final image list: {post.images}")
+            
+        # Log final post content summary
+        self.logger.info(f"Post content summary:")
+        self.logger.info(f"- Has main text: {bool(post.main_text)}")
+        self.logger.info(f"- Has alt text: {bool(post.alt_text)}")
+        self.logger.info(f"- Number of images: {len(post.images)}")
+        self.logger.info(f"- Has video: {bool(post.video)}")
+        
         return post
 
     def _move_to_posted(self, basename: str):
@@ -122,6 +161,10 @@ class PhongBot:
             if not available_posts:
                 self.logger.info("No new content available to post")
                 return False
+                
+            if not self.posters:
+                self.logger.error("No social media platforms are enabled")
+                return False
             
             selected_basename = random.choice(available_posts)
             post_content = self._build_post_content(selected_basename)
@@ -129,6 +172,7 @@ class PhongBot:
             success = True
             for poster in self.posters:
                 if not poster.post_content(post_content):
+                    self.logger.error(f"Failed to post using {poster.__class__.__name__}")
                     success = False
             
             if success:
