@@ -1,3 +1,5 @@
+# phong-bot.py
+
 #    @..@ 
 #   (----)
 #  ( >__< )
@@ -18,10 +20,10 @@ import random
 import logging
 import shutil
 from pathlib import Path
-from typing import List, Set
+from typing import List, Set, Dict, Tuple
 
 from post_x import XPoster
-from post_instagram import InstagramPoster  # Updated import
+from post_instagram import InstagramPoster
 from post_base import PostContent
 
 class PhongBot:
@@ -46,8 +48,8 @@ class PhongBot:
         self.posters = []
         if self.config['x']['enabled']:
             self.posters.append(XPoster(self.config))
-        if self.config['instagram']['enabled']:  # Removed threads condition
-            self.posters.append(InstagramPoster(self.config))  # Updated class name
+        if self.config['instagram']['enabled']:
+            self.posters.append(InstagramPoster(self.config))
         
         if not self.posters:
             self.logger.warning("No social media platforms are enabled in config")
@@ -169,17 +171,25 @@ class PhongBot:
             selected_basename = random.choice(available_posts)
             post_content = self._build_post_content(selected_basename)
             
-            success = True
-            for poster in self.posters:
-                if not poster.post_content(post_content):
-                    self.logger.error(f"Failed to post using {poster.__class__.__name__}")
-                    success = False
+            # Track posting results for each platform
+            posting_results = {
+                poster.__class__.__name__: poster.post_content(post_content)
+                for poster in self.posters
+            }
             
-            if success:
+            # Log results for each platform
+            for platform, success in posting_results.items():
+                status = "successful" if success else "failed"
+                self.logger.info(f"Posting to {platform} was {status}")
+            
+            # If at least one platform was successful, move to posted
+            if any(posting_results.values()):
                 self._move_to_posted(selected_basename)
-                self.logger.info(f"Successfully posted content: {selected_basename}")
-                
-            return success
+                self.logger.info(f"At least one platform succeeded, moved content to posted: {selected_basename}")
+                return True
+            else:
+                self.logger.error("All platforms failed to post, keeping content in original location")
+                return False
             
         except Exception as e:
             self.logger.error(f"Error in post_random_content: {e}")
